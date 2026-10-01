@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ROLLARIS Duell</title>
+<meta property="og:title" content="ROLLARIS – Duell">
+<meta property="og:description" content="Du wurdest herausgefordert! Tippe, um das Duell im Spiel zu öffnen.">
+<style>
+  @font-face { font-family: 'Lilita One'; src: url('fonts/lilita-one-regular.ttf') format('truetype'); font-display: swap; }
+  @font-face { font-family: 'Nunito'; font-weight: 700; src: url('fonts/nunito-latin-700-normal.woff2') format('woff2'); font-display: swap; }
+  @font-face { font-family: 'Nunito'; font-weight: 800; src: url('fonts/nunito-latin-800-normal.woff2') format('woff2'); font-display: swap; }
+  :root {
+    --ink: #2B2140; --cream: #FFF7EA; --beige: #F3E7D3; --yellow: #FFC83D; --yellow-dark: #E7A21B;
+    --pink: #F2668B; --muted: #8E83A0; --sky1: #8FD3F4; --sky2: #CDEBFA;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    background: linear-gradient(180deg, var(--sky1), var(--sky2)); color: var(--ink);
+    font-family: 'Nunito', system-ui, sans-serif; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px 16px;
+  }
+  .card {
+    width: 100%; max-width: 440px; background: var(--cream); border: 3px solid var(--ink); border-radius: 26px;
+    box-shadow: 0 7px 0 var(--ink); padding: 22px 20px 20px; position: relative;
+  }
+  .badge {
+    display: inline-block; background: var(--pink); color: #fff; border: 3px solid var(--ink); border-radius: 999px;
+    padding: 3px 12px; font-size: 13px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+  }
+  h1 { font-family: 'Lilita One', system-ui, sans-serif; font-weight: 400; font-size: 34px; line-height: 1.05; margin: 14px 0 6px; }
+  .sub { color: var(--muted); margin: 0 0 16px; font-size: 16px; }
+  .tile { background: var(--beige); border-radius: 16px; padding: 10px 14px; margin-bottom: 18px; display: flex; gap: 12px; align-items: center; }
+  .tile b { font-size: 24px; }
+  .tile span { color: var(--muted); font-size: 14px; display: block; }
+  .btn {
+    display: block; width: 100%; text-align: center; text-decoration: none; cursor: pointer;
+    font-family: 'Lilita One', system-ui, sans-serif; font-size: 26px; color: var(--ink);
+    background: var(--yellow); border: 3px solid var(--ink); border-radius: 20px; padding: 14px 10px 12px;
+    box-shadow: inset 0 -6px 0 var(--yellow-dark), 0 6px 0 var(--ink); margin-bottom: 18px;
+  }
+  .btn:active { transform: translateY(4px); box-shadow: inset 0 -6px 0 var(--yellow-dark), 0 2px 0 var(--ink); }
+  .btn.small {
+    font-family: 'Nunito', system-ui, sans-serif; font-weight: 800; font-size: 17px; background: var(--cream);
+    box-shadow: inset 0 -5px 0 #E9DCC6, 0 5px 0 var(--ink); padding: 11px 10px;
+  }
+  .note { font-size: 14px; color: var(--muted); line-height: 1.45; margin: 0; }
+  .warn { background: #FFE3EA; border: 2px dashed var(--pink); border-radius: 14px; padding: 10px 12px; margin-bottom: 16px; font-size: 15px; }
+  .ball { position: absolute; right: -14px; top: -26px; width: 78px; height: 78px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main class="card">
+  <svg class="ball" viewBox="0 0 100 100" aria-hidden="true">
+    <circle cx="50" cy="50" r="45" fill="#2EC4C9" stroke="#2B2140" stroke-width="5"/>
+    <path d="M12 38 Q50 62 88 38" fill="none" stroke="#fff" stroke-width="12"/>
+    <path d="M12 38 Q50 62 88 38" fill="none" stroke="#1E9AA0" stroke-width="3"/>
+    <ellipse cx="34" cy="26" rx="10" ry="6" fill="#fff" opacity=".8"/>
+  </svg>
+  <span class="badge" id="badge">Duell</span>
+  <h1 id="title">Du wurdest herausgefordert!</h1>
+  <p class="sub" id="level"></p>
+  <div class="tile" id="timeTile" hidden>
+    <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8" fill="none" stroke="#2B2140" stroke-width="2.4"/><path d="M12 9v4l3 2M9 2h6" stroke="#2B2140" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>
+    <div><span id="timeLabel">Zeit zum Schlagen</span><b id="time"></b></div>
+  </div>
+  <div class="warn" id="noApp" hidden></div>
+  <div class="warn" id="noCode" hidden></div>
+  <a class="btn" id="open" href="#">In ROLLARIS öffnen</a>
+  <button class="btn small" id="copy" type="button">Code kopieren</button>
+  <p class="note" id="help"></p>
+</main>
+<script>
+(function () {
+  var PKG = 'com.orbifold.rollaris';
+  var de = !/^en/i.test(navigator.language || 'de');
+  var T = de ? {
+    duel: 'Duell', title: function (n) { return n + ' fordert dich heraus!'; }, anon: 'Du wurdest herausgefordert!',
+    world: 'Welt', level: 'Level', bonus: 'Bonus', secret: 'Geheimlevel', timeLabel: 'Zeit zum Schlagen',
+    open: 'In ROLLARIS öffnen', copy: 'Code kopieren', copied: 'Kopiert ✓',
+    help: 'Öffnet sich das Spiel nicht? Code kopieren, ROLLARIS starten und unter Spielmodi → Duell „Code aus Zwischenablage“ antippen.',
+    noApp: 'ROLLARIS scheint auf diesem Gerät nicht installiert zu sein. Frag den Absender nach der App (Android).',
+    noCode: 'In diesem Link steckt kein Duell-Code. Bitte die ganze Nachricht noch einmal schicken lassen.'
+  } : {
+    duel: 'Duel', title: function (n) { return n + ' challenges you!'; }, anon: 'You have been challenged!',
+    world: 'World', level: 'Level', bonus: 'Bonus', secret: 'Secret level', timeLabel: 'Time to beat',
+    open: 'Open in ROLLARIS', copy: 'Copy code', copied: 'Copied ✓',
+    help: 'Game does not open? Copy the code, start ROLLARIS and tap “Paste code” under Game modes → Duel.',
+    noApp: 'ROLLARIS does not seem to be installed on this device. Ask the sender for the app (Android).',
+    noCode: 'This link contains no duel code. Please ask for the whole message again.'
+  };
+  if (!de) document.documentElement.lang = 'en';
+  var q = new URLSearchParams(location.search);
+  var code = decodeURIComponent((location.hash || '').replace(/^#/, ''));
+  var valid = /^RLX1-\d+\.[A-Za-z0-9_-]+$/.test(code);
+  function $(id) { return document.getElementById(id); }
+  var name = (q.get('n') || '').slice(0, 20);
+  $('badge').textContent = T.duel;
+  $('title').textContent = name ? T.title(name) : T.anon;
+  var m = /^W(\d+)-(\d\d|B\d|S)$/.exec(q.get('l') || '');
+  if (m) {
+    var part = m[2] === 'S' ? T.secret : (m[2][0] === 'B' ? T.bonus + ' ' + m[2].slice(1) : T.level + ' ' + parseInt(m[2], 10));
+    $('level').textContent = T.world + ' ' + m[1] + ' · ' + part;
+  }
+  var t = q.get('t');
+  if (t && /^[0-9:.]{1,12}$/.test(t)) { $('time').textContent = t; $('timeLabel').textContent = T.timeLabel; $('timeTile').hidden = false; }
+  $('open').textContent = T.open;
+  $('copy').textContent = T.copy;
+  $('help').textContent = T.help;
+  if (!valid) {
+    $('noCode').textContent = T.noCode; $('noCode').hidden = false;
+    $('open').hidden = true; $('copy').hidden = true; $('help').hidden = true;
+    return;
+  }
+  var android = /Android/i.test(navigator.userAgent);
+  var noapp = q.get('noapp') === '1';
+  var fallback = location.origin + location.pathname + '?' + (function () { q.set('noapp', '1'); return q.toString(); })() + '#' + code;
+  var url = android
+    ? 'intent://duell/' + code + '#Intent;scheme=rollaris;package=' + PKG + ';S.browser_fallback_url=' + encodeURIComponent(fallback) + ';end'
+    : 'rollaris://duell/' + code;
+  $('open').href = url;
+  if (noapp) { $('noApp').textContent = T.noApp; $('noApp').hidden = false; }
+  $('copy').addEventListener('click', function () {
+    var done = function () { $('copy').textContent = T.copied; setTimeout(function () { $('copy').textContent = T.copy; }, 1800); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(done, function () { prompt(T.copy, code); });
+    } else { prompt(T.copy, code); }
+  });
+  // Direkt ins Spiel springen (ohne Knopfdruck; blockiert der Browser das, bleibt der Knopf)
+  if (android && !noapp) { setTimeout(function () { location.href = url; }, 250); }
+})();
+</script>
+</body>
+</html>
