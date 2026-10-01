@@ -1,11 +1,14 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
     "target": {
       "namespace": "android_app",
       "package_name": "com.orbifold.rollaris",
       "sha256_cert_fingerprints": [
-        "86:F6:20:AA:C5:0F:3F:3B:6E:C7:2E:0D:1D:86:78:09:56:AB:82:DE:46:2D:43:F9:EA:77:4E:75:06:63:D2:A5"
+        "86:F6:20:AA:C5:0F:3F:3B:6E:C7:2E:0D:1D:86:78:09:56:AB:82:DE:46:2D:43:F9:EA:77:4E:75:06:63:D2:A5",
+        "EB:83:B7:D4:31:4D:5E:FC:10:8C:DC:E8:E6:B7:24:57:39:98:1A:47:38:47:14:F2:02:89:A2:6E:A3:6D:A4:96"
       ]
     }
   }
