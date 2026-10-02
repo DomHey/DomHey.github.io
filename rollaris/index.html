@@ -64,7 +64,7 @@
   <h1 id="title">Du wurdest herausgefordert!</h1>
   <p class="sub" id="level"></p>
   <div class="tile" id="timeTile" hidden>
-    <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8" fill="none" stroke="#2B2140" stroke-width="2.4"/><path d="M12 9v4l3 2M9 2h6" stroke="#2B2140" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>
+    <svg id="timeIcon" width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8" fill="none" stroke="#2B2140" stroke-width="2.4"/><path d="M12 9v4l3 2M9 2h6" stroke="#2B2140" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>
     <div><span id="timeLabel">Zeit zum Schlagen</span><b id="time"></b></div>
   </div>
   <div class="warn" id="noApp" hidden></div>
@@ -83,20 +83,66 @@
     open: 'In ROLLARIS öffnen', copy: 'Code kopieren', copied: 'Kopiert ✓',
     help: 'Öffnet sich das Spiel nicht? Code kopieren, ROLLARIS starten und unter Spielmodi → Duell „Code aus Zwischenablage“ antippen.',
     noApp: 'ROLLARIS scheint auf diesem Gerät nicht installiert zu sein. Frag den Absender nach der App (Android).',
-    noCode: 'In diesem Link steckt kein Duell-Code. Bitte die ganze Nachricht noch einmal schicken lassen.'
+    noCode: 'In diesem Link steckt kein Duell-Code. Bitte die ganze Nachricht noch einmal schicken lassen.',
+    workshop: 'Werkstatt', lvTitle: 'Ein Level aus der Werkstatt', lvCode: 'Level-Code',
+    lvHelp: 'Öffnet sich das Spiel nicht? ROLLARIS starten, Werkstatt → Level-Code antippen und den Code eingeben.'
   } : {
     duel: 'Duel', title: function (n) { return n + ' challenges you!'; }, anon: 'You have been challenged!',
     world: 'World', level: 'Level', bonus: 'Bonus', secret: 'Secret level', timeLabel: 'Time to beat',
     open: 'Open in ROLLARIS', copy: 'Copy code', copied: 'Copied ✓',
     help: 'Game does not open? Copy the code, start ROLLARIS and tap “Paste code” under Game modes → Duel.',
     noApp: 'ROLLARIS does not seem to be installed on this device. Ask the sender for the app (Android).',
-    noCode: 'This link contains no duel code. Please ask for the whole message again.'
+    noCode: 'This link contains no duel code. Please ask for the whole message again.',
+    workshop: 'Workshop', lvTitle: 'A level from the workshop', lvCode: 'Level code',
+    lvHelp: 'Game does not open? Start ROLLARIS, tap Workshop → Level code and enter the code.'
   };
   if (!de) document.documentElement.lang = 'en';
   var q = new URLSearchParams(location.search);
   var code = decodeURIComponent((location.hash || '').replace(/^#/, ''));
   var valid = /^RLX1-\d+\.[A-Za-z0-9_-]+$/.test(code);
   function $(id) { return document.getElementById(id); }
+  var android = /Android/i.test(navigator.userAgent);
+  var noapp = q.get('noapp') === '1';
+  // Link, der das Spiel oeffnet; ohne App landet Android wieder hier (noapp=1)
+  function appUrl(path) {
+    var back = new URLSearchParams(location.search);
+    back.set('noapp', '1');
+    var fallback = location.origin + location.pathname + '?' + back.toString() + location.hash;
+    return android
+      ? 'intent://' + path + '#Intent;scheme=rollaris;package=' + PKG + ';S.browser_fallback_url=' + encodeURIComponent(fallback) + ';end'
+      : 'rollaris://' + path;
+  }
+  function copyButton(text) {
+    $('copy').addEventListener('click', function () {
+      var done = function () { $('copy').textContent = T.copied; setTimeout(function () { $('copy').textContent = T.copy; }, 1800); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function () { prompt(T.copy, text); });
+      } else { prompt(T.copy, text); }
+    });
+  }
+  $('open').textContent = T.open;
+  $('copy').textContent = T.copy;
+
+  // Geteiltes Level aus der Werkstatt: ?c=CODE&n=Name
+  var lv = (q.get('c') || '').toUpperCase().replace(/[\s-]/g, '');
+  if (/^[A-HJ-NP-Z2-9]{6}$/.test(lv)) {
+    var lvName = (q.get('n') || '').slice(0, 26);
+    document.title = 'ROLLARIS Level';
+    $('badge').textContent = T.workshop;
+    $('title').textContent = lvName ? '„' + lvName + '“' : T.lvTitle;
+    $('time').textContent = lv;
+    $('timeLabel').textContent = T.lvCode;
+    $('timeIcon').style.display = 'none';
+    $('timeTile').hidden = false;
+    $('help').textContent = T.lvHelp;
+    var lvUrl = appUrl('level/' + lv);
+    $('open').href = lvUrl;
+    if (noapp) { $('noApp').textContent = T.noApp; $('noApp').hidden = false; }
+    copyButton(lv);
+    if (android && !noapp) { setTimeout(function () { location.href = lvUrl; }, 250); }
+    return;
+  }
+
   var name = (q.get('n') || '').slice(0, 20);
   $('badge').textContent = T.duel;
   $('title').textContent = name ? T.title(name) : T.anon;
@@ -105,30 +151,21 @@
     var part = m[2] === 'S' ? T.secret : (m[2][0] === 'B' ? T.bonus + ' ' + m[2].slice(1) : T.level + ' ' + parseInt(m[2], 10));
     $('level').textContent = T.world + ' ' + m[1] + ' · ' + part;
   }
+  // Duell auf einem geteilten Level der Werkstatt
+  var mc = /^C-([A-HJ-NP-Z2-9]{6})$/.exec(q.get('l') || '');
+  if (mc) $('level').textContent = T.workshop + ' · ' + mc[1];
   var t = q.get('t');
   if (t && /^[0-9:.]{1,12}$/.test(t)) { $('time').textContent = t; $('timeLabel').textContent = T.timeLabel; $('timeTile').hidden = false; }
-  $('open').textContent = T.open;
-  $('copy').textContent = T.copy;
   $('help').textContent = T.help;
   if (!valid) {
     $('noCode').textContent = T.noCode; $('noCode').hidden = false;
     $('open').hidden = true; $('copy').hidden = true; $('help').hidden = true;
     return;
   }
-  var android = /Android/i.test(navigator.userAgent);
-  var noapp = q.get('noapp') === '1';
-  var fallback = location.origin + location.pathname + '?' + (function () { q.set('noapp', '1'); return q.toString(); })() + '#' + code;
-  var url = android
-    ? 'intent://duell/' + code + '#Intent;scheme=rollaris;package=' + PKG + ';S.browser_fallback_url=' + encodeURIComponent(fallback) + ';end'
-    : 'rollaris://duell/' + code;
+  var url = appUrl('duell/' + code);
   $('open').href = url;
   if (noapp) { $('noApp').textContent = T.noApp; $('noApp').hidden = false; }
-  $('copy').addEventListener('click', function () {
-    var done = function () { $('copy').textContent = T.copied; setTimeout(function () { $('copy').textContent = T.copy; }, 1800); };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(code).then(done, function () { prompt(T.copy, code); });
-    } else { prompt(T.copy, code); }
-  });
+  copyButton(code);
   // Direkt ins Spiel springen (ohne Knopfdruck; blockiert der Browser das, bleibt der Knopf)
   if (android && !noapp) { setTimeout(function () { location.href = url; }, 250); }
 })();
