@@ -85,6 +85,7 @@
     noApp: 'ROLLARIS scheint auf diesem Gerät nicht installiert zu sein. Frag den Absender nach der App (Android).',
     noCode: 'In diesem Link steckt kein Duell-Code. Bitte die ganze Nachricht noch einmal schicken lassen.',
     workshop: 'Werkstatt', lvTitle: 'Ein Level aus der Werkstatt', lvCode: 'Level-Code',
+    pkTitle: 'Ein Levelpaket aus der Werkstatt', pkCode: 'Paket-Code',
     lvHelp: 'Öffnet sich das Spiel nicht? ROLLARIS starten, Werkstatt → Level-Code antippen und den Code eingeben.'
   } : {
     duel: 'Duel', title: function (n) { return n + ' challenges you!'; }, anon: 'You have been challenged!',
@@ -94,6 +95,7 @@
     noApp: 'ROLLARIS does not seem to be installed on this device. Ask the sender for the app (Android).',
     noCode: 'This link contains no duel code. Please ask for the whole message again.',
     workshop: 'Workshop', lvTitle: 'A level from the workshop', lvCode: 'Level code',
+    pkTitle: 'A level pack from the workshop', pkCode: 'Pack code',
     lvHelp: 'Game does not open? Start ROLLARIS, tap Workshop → Level code and enter the code.'
   };
   if (!de) document.documentElement.lang = 'en';
@@ -123,19 +125,20 @@
   $('open').textContent = T.open;
   $('copy').textContent = T.copy;
 
-  // Geteiltes Level aus der Werkstatt: ?c=CODE&n=Name
+  // Geteiltes Level oder Levelpaket aus der Werkstatt: ?c=CODE&n=Name, bei einem Paket dazu &k=p
   var lv = (q.get('c') || '').toUpperCase().replace(/[\s-]/g, '');
   if (/^[A-HJ-NP-Z2-9]{6}$/.test(lv)) {
     var lvName = (q.get('n') || '').slice(0, 26);
-    document.title = 'ROLLARIS Level';
+    var pack = q.get('k') === 'p';
+    document.title = pack ? 'ROLLARIS Levelpaket' : 'ROLLARIS Level';
     $('badge').textContent = T.workshop;
-    $('title').textContent = lvName ? '„' + lvName + '“' : T.lvTitle;
+    $('title').textContent = lvName ? '„' + lvName + '“' : (pack ? T.pkTitle : T.lvTitle);
     $('time').textContent = lv;
-    $('timeLabel').textContent = T.lvCode;
+    $('timeLabel').textContent = pack ? T.pkCode : T.lvCode;
     $('timeIcon').style.display = 'none';
     $('timeTile').hidden = false;
     $('help').textContent = T.lvHelp;
-    var lvUrl = appUrl('level/' + lv);
+    var lvUrl = appUrl((pack ? 'pack/' : 'level/') + lv);
     $('open').href = lvUrl;
     if (noapp) { $('noApp').textContent = T.noApp; $('noApp').hidden = false; }
     copyButton(lv);
