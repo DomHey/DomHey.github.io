@@ -86,7 +86,10 @@
     noCode: 'In diesem Link steckt kein Duell-Code. Bitte die ganze Nachricht noch einmal schicken lassen.',
     workshop: 'Werkstatt', lvTitle: 'Ein Level aus der Werkstatt', lvCode: 'Level-Code',
     pkTitle: 'Ein Levelpaket aus der Werkstatt', pkCode: 'Paket-Code',
-    lvHelp: 'Öffnet sich das Spiel nicht? ROLLARIS starten, Werkstatt → Level-Code antippen und den Code eingeben.'
+    lvHelp: 'Öffnet sich das Spiel nicht? ROLLARIS starten, Werkstatt → Level-Code antippen und den Code eingeben.',
+    online: 'Online', invTitle: function (n) { return n + ' lädt dich ein!'; }, invAnon: 'Einladung zum Online-Spiel',
+    invSub: 'Münzjagd und Einfärben – bis zu 4 Spieler', invCode: 'Lobby-Code',
+    invHelp: 'Öffnet sich das Spiel nicht? ROLLARIS starten, Spielmodi → Online → „Mit Code beitreten“ antippen und den Code eingeben.'
   } : {
     duel: 'Duel', title: function (n) { return n + ' challenges you!'; }, anon: 'You have been challenged!',
     world: 'World', level: 'Level', bonus: 'Bonus', secret: 'Secret level', timeLabel: 'Time to beat',
@@ -96,7 +99,10 @@
     noCode: 'This link contains no duel code. Please ask for the whole message again.',
     workshop: 'Workshop', lvTitle: 'A level from the workshop', lvCode: 'Level code',
     pkTitle: 'A level pack from the workshop', pkCode: 'Pack code',
-    lvHelp: 'Game does not open? Start ROLLARIS, tap Workshop → Level code and enter the code.'
+    lvHelp: 'Game does not open? Start ROLLARIS, tap Workshop → Level code and enter the code.',
+    online: 'Online', invTitle: function (n) { return n + ' invites you!'; }, invAnon: 'Invitation to play online',
+    invSub: 'Coin rush and paint battle – up to 4 players', invCode: 'Lobby code',
+    invHelp: 'Game does not open? Start ROLLARIS, go to Game modes → Online → “Join with code” and enter the code.'
   };
   if (!de) document.documentElement.lang = 'en';
   var q = new URLSearchParams(location.search);
@@ -124,6 +130,27 @@
   }
   $('open').textContent = T.open;
   $('copy').textContent = T.copy;
+
+  // Einladung in eine Online-Lobby: ?r=CODE&n=Name (fuenf Zeichen)
+  var inv = (q.get('r') || '').toUpperCase().replace(/[\s-]/g, '');
+  if (/^[A-HJ-NP-Z2-9]{5}$/.test(inv)) {
+    var from = (q.get('n') || '').slice(0, 20);
+    document.title = 'ROLLARIS Online';
+    $('badge').textContent = T.online;
+    $('title').textContent = from ? T.invTitle(from) : T.invAnon;
+    $('level').textContent = T.invSub;
+    $('time').textContent = inv;
+    $('timeLabel').textContent = T.invCode;
+    $('timeIcon').style.display = 'none';
+    $('timeTile').hidden = false;
+    $('help').textContent = T.invHelp;
+    var invUrl = appUrl('live/' + inv);
+    $('open').href = invUrl;
+    if (noapp) { $('noApp').textContent = T.noApp; $('noApp').hidden = false; }
+    copyButton(inv);
+    if (android && !noapp) { setTimeout(function () { location.href = invUrl; }, 250); }
+    return;
+  }
 
   // Geteiltes Level oder Levelpaket aus der Werkstatt: ?c=CODE&n=Name, bei einem Paket dazu &k=p
   var lv = (q.get('c') || '').toUpperCase().replace(/[\s-]/g, '');
